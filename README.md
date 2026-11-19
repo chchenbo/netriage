@@ -7,7 +7,7 @@ context, and ten minutes. `netriage` takes one pass of measurements and says
 which of the usual things is wrong: coverage, congestion, retries, DHCP, DNS,
 or a link that is fine and a ceiling somewhere else.
 
-![netriage running](docs/demo.gif)
+![netriage running](https://raw.githubusercontent.com/chchenbo/netriage/main/docs/demo.gif)
 
 Linux only, standard library only, Python 3.8+. It reads `iw`, `ethtool`,
 `nmcli`, `ping`, `dig` and `lldpcli` — there is nothing to measure on another
