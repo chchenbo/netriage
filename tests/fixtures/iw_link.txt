@@ -1,0 +1,11 @@
+Connected to 74:90:bc:a7:15:9f (on wlp5s0)
+	SSID: MagentaWLAN-P2S3_5GHz
+	freq: 5180.0
+	RX: 629772 bytes (4334 packets)
+	TX: 308290 bytes (1720 packets)
+	signal: -67 dBm
+	rx bitrate: 1053.0 MBit/s VHT-MCS 6 160MHz VHT-NSS 2
+	tx bitrate: 1300.0 MBit/s VHT-MCS 7 160MHz short GI VHT-NSS 2
+	bss flags: short-slot-time
+	dtim period: 1
+	beacon int: 100

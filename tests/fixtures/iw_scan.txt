@@ -1,0 +1,26 @@
+BSS 74:90:bc:a7:15:9f(on wlp5s0)
+	last seen: 123.456s [boottime]
+	freq: 5180
+	beacon interval: 100 TUs
+	capability: ESS Privacy SpectrumMgmt (0x0511)
+	signal: -59.00 dBm
+	SSID: MagentaWLAN-P2S3_5GHz
+	RSN:	 * Version: 1
+		 * Group cipher: CCMP
+		 * Pairwise ciphers: CCMP
+		 * Authentication suites: PSK
+		 * Authentication suites: SAE
+	BSS Load:
+		 * station count: 12
+		 * channel utilisation: 36/255
+BSS 1a:25:2a:98:55:f6(on wlp5s0)
+	freq: 2472
+	signal: -55.00 dBm
+	SSID: 15112345677\xe7\x9a\x84nova 14 Ultra
+	BSS Load:
+		 * station count: 1
+		 * channel utilisation: 0/255
+BSS aa:bb:cc:dd:ee:ff(on wlp5s0)
+	freq: 2437
+	signal: -80.00 dBm
+	SSID:

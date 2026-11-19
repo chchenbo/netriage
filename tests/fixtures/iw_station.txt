@@ -1,0 +1,11 @@
+Station 74:90:bc:a7:15:9f (on wlp5s0)
+	inactive time:	120 ms
+	rx bytes:	629772
+	tx bytes:	308290
+	signal:  	-67 [-70, -66] dBm
+	tx bitrate:	1300.0 MBit/s
+	rx bitrate:	1053.0 MBit/s
+	beacon loss:	26
+	tx retries:	120
+	tx failed:	0
+	tx packets:	1000

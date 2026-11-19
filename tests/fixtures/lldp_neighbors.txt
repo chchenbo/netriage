@@ -1,0 +1,11 @@
+-------------------------------------------------------------------------------
+LLDP neighbors:
+-------------------------------------------------------------------------------
+Interface:    enp3s0, via: LLDP, RID: 1, Time: 0 day, 00:12:34
+  Chassis:
+    ChassisID:    mac 00:11:22:33:44:55
+    SysName:      Switch-B
+  Port:
+    PortID:       ifname Gi1/0/12
+    PortDescr:    GigabitEthernet1/0/12
+  VLAN:           120

@@ -1,0 +1,52 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # 22.04 still offers 3.8, which Ubuntu 20.04 ships and the tool still runs on
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest ruff
+
+      - name: lint
+        run: ruff check netriage tests
+
+      - name: test
+        run: pytest
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: install the wheel and run it
+        run: |
+          pip install dist/*.whl
+          netriage --version
+          netriage --help

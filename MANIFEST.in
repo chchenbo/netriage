@@ -1,0 +1,3 @@
+include README.md GUIDE.md TROUBLESHOOTING.md LICENSE pyproject.toml
+recursive-include tests *.py *.txt
+recursive-include docs *.png *.gif
