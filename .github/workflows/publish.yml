@@ -10,6 +10,9 @@ on:
 jobs:
   pypi:
     runs-on: ubuntu-latest
+    # must match the environment named in PyPI's trusted publisher settings,
+    # or the OIDC token carries no environment claim and the upload is refused
+    environment: pypi
     permissions:
       id-token: write     # trusted publishing: no token, no secret
       contents: read
