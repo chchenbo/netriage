@@ -1,5 +1,10 @@
 # netriage
 
+[![PyPI](https://img.shields.io/pypi/v/netriage.svg)](https://pypi.org/project/netriage/)
+[![Python](https://img.shields.io/pypi/pyversions/netriage.svg)](https://pypi.org/project/netriage/)
+[![CI](https://github.com/chchenbo/netriage/actions/workflows/test.yml/badge.svg)](https://github.com/chchenbo/netriage/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **A field network check that prints a verdict, not a wall of numbers.**
 
 Someone says *"the Wi-Fi is broken in room 2.14"*. You have a laptop, no
@@ -7,7 +12,7 @@ context, and ten minutes. `netriage` takes one pass of measurements and says
 which of the usual things is wrong: coverage, congestion, retries, DHCP, DNS,
 or a link that is fine and a ceiling somewhere else.
 
-![netriage running](https://raw.githubusercontent.com/chchenbo/netriage/main/docs/demo.gif)
+![netriage running](docs/demo.gif)
 
 Linux only, standard library only, Python 3.8+. It reads `iw`, `ethtool`,
 `nmcli`, `ping`, `dig` and `lldpcli` — there is nothing to measure on another
@@ -18,24 +23,41 @@ platform.
 ```bash
 sudo apt install -y iw ethtool lldpd dnsutils curl iputils-ping network-manager
 sudo systemctl enable --now lldpd
-
-git clone https://github.com/chchenbo/netriage netriage-src
-cd netriage-src
-sudo bash install.sh
 ```
 
-That puts the command in `/usr/local/bin`, so from any directory:
+**With pipx**
 
 ```bash
-netriage
+pipx install netriage
+sudo ln -sf "$(command -v netriage)" /usr/local/bin/netriage
 ```
 
-`sudo netriage` adds what only root can read — the access point's own load
-figures and client counts — and the report says so on the line it applies to:
+The second line puts the command in `/usr/local/bin`, so `sudo netriage` finds
+it too — which is what you want, because the access point's own load figures
+need root.
 
+```bash
+pipx upgrade netriage                                       # upgrade
+
+pipx uninstall netriage && sudo rm /usr/local/bin/netriage  # remove
 ```
-  Channel busy      n/a - run with sudo to read it from the AP
+
+Remove both lines, or a dead link stays in `/usr/local/bin`.
+
+**Without pipx** — nothing to download, and it works on a machine with no
+network:
+
+```bash
+git clone https://github.com/chchenbo/netriage netriage-src
+cd netriage-src
+sudo bash install.sh          # install
+
+cd netriage-src && git pull && sudo bash install.sh   # upgrade
+sudo bash uninstall.sh        # remove
 ```
+
+Both give you `netriage` and `sudo netriage`, with every feature. The only
+difference is how you update and remove them.
 
 ## Use
 

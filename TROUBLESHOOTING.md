@@ -16,10 +16,20 @@ command -v netriage                 # nothing? then it is not on PATH
 echo $PATH | tr ':' '\n' | grep local
 ```
 
+**After `pipx install`** the command is in `~/.local/bin`:
+
 ```bash
-rehash                              # forget cached command paths
-export PATH="/usr/local/bin:$PATH"  # system install
-export PATH="$HOME/.local/bin:$PATH" # per-user install
+pipx ensurepath                     # adds it, then open a new terminal
+rehash                              # zsh: forget the cached list of commands
+ls -l ~/.local/bin/netriage         # the binary is there either way
+```
+
+**After `install.sh`** the command is in `/usr/local/bin`, which is on every
+PATH including sudo's:
+
+```bash
+rehash
+export PATH="/usr/local/bin:$PATH"
 ```
 
 Put that line in `~/.zshrc` or `~/.bashrc` to make it stick.
@@ -83,11 +93,46 @@ it could not read.
 
 ## `sudo netriage` says command not found
 
-You installed for your user only. sudo resets `HOME` and `PATH`, so it cannot
-see `~/.local/bin`.
+**After a pipx install** the link is missing. pipx puts the command in
+`~/.local/bin`, and sudo does not look there:
+
+```bash
+sudo ln -sf "$(command -v netriage)" /usr/local/bin/netriage
+```
+
+`command -v` must print something first. If it prints nothing,
+`pipx install netriage` did not finish; run it again.
+
+**After install.sh** the install went to your user, not the system. sudo resets
+`HOME` and `PATH`, so it cannot see `~/.local/bin`:
 
 ```bash
 cd ~/netriage-src && sudo bash install.sh
+```
+
+---
+
+## Two copies are installed
+
+`pipx install` and `install.sh` do not know about each other. Check which one
+you are running:
+
+```bash
+netriage --version
+# package  /usr/local/lib/python3.12/dist-packages/netriage   <- install.sh
+# package  ~/.local/share/pipx/venvs/netriage/lib/...         <- pipx
+
+readlink -f "$(command -v netriage)"
+# ~/.local/bin/netriage  -> pipx, and the link in /usr/local/bin points there
+# /usr/local/lib/...     -> install.sh wrote it directly
+```
+
+`PATH` decides which one wins, and `/usr/local/bin` usually comes before
+`~/.local/bin`. Remove the one you do not want:
+
+```bash
+pipx uninstall netriage && sudo rm -f /usr/local/bin/netriage    # pipx
+cd ~/netriage-src && sudo bash uninstall.sh                      # install.sh
 ```
 
 ---

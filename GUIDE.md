@@ -213,6 +213,57 @@ netriage
 netriage report > evidence.md
 ```
 
+## Install, upgrade, remove
+
+Two ways in. Both end with `netriage` and `sudo netriage` in `/usr/local/bin`,
+with every feature. Only maintenance differs.
+
+### With pipx
+
+```bash
+pipx install netriage
+sudo ln -sf "$(command -v netriage)" /usr/local/bin/netriage
+```
+
+The link is what makes `sudo netriage` work: pipx installs to `~/.local/bin`,
+and sudo does not look there. Run the two in that order — `command -v` needs
+the first one to have finished.
+
+| Action | Command |
+|---|---|
+| Upgrade | `pipx upgrade netriage` |
+| Remove | `pipx uninstall netriage && sudo rm /usr/local/bin/netriage` |
+| See what is installed | `pipx list` |
+| Version in use | `netriage --version` |
+
+### Without pipx
+
+```bash
+git clone https://github.com/chchenbo/netriage netriage-src
+cd netriage-src && sudo bash install.sh
+```
+
+| Action | Command |
+|---|---|
+| Upgrade | `cd netriage-src && git pull && sudo bash install.sh` |
+| Remove | `cd netriage-src && sudo bash uninstall.sh` |
+| Version in use | `netriage --version` |
+
+No network at install time, no pip, no virtualenv: it copies the package into
+`/usr/local/lib/pythonX.Y/dist-packages` and writes a launcher.
+
+### Which one
+
+| Situation | Use |
+|---|---|
+| Machine with no network, or pipx older than 1.5 | `install.sh` |
+| You want `pipx upgrade` to be one command | pipx |
+| Several versions of Python in use | pipx (it stays in its own venv) |
+| A Raspberry Pi or an old Ubuntu | `install.sh` |
+
+`pipx install --global netriage` would do both jobs at once, but Ubuntu 24.04
+ships pipx 1.4.3, which does not have it. The link above works everywhere.
+
 ## Where files go
 
 | What | Where |
