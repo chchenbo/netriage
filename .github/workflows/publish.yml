@@ -1,0 +1,45 @@
+name: publish
+
+# Runs when you publish a GitHub release, which is also the moment the tag
+# stops moving. PyPI never accepts the same version twice, so the order
+# matters: test, build, verify the tag, then upload.
+on:
+  release:
+    types: [published]
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write     # trusted publishing: no token, no secret
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: the tag must match the version in the package
+        run: |
+          python - <<'PY'
+          import os, sys
+          sys.path.insert(0, ".")
+          import netriage
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          print(f"tag {tag}, package {netriage.__version__}")
+          if tag != netriage.__version__:
+              sys.exit("refusing to publish: bump the version or fix the tag")
+          PY
+
+      - name: test
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest -q
+
+      - name: build
+        run: |
+          python -m pip install --quiet build
+          python -m build
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
