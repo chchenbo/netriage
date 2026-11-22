@@ -17,7 +17,15 @@ DEFAULT_DOWNLOADS = (
     "https://speed.cloudflare.com/__down?bytes=10000000",
 )
 DEFAULT_UPLOAD = "https://speed.cloudflare.com/__up"
-DEFAULT_LATENCY = "http://connectivitycheck.gstatic.com/generate_204"
+# Three destinations, all https: one fast endpoint that answers 0.2 kB, and
+# two real pages. One is not enough to tell "the path is broken" from "this
+# site is blocked", and that difference is the whole point of the check.
+DEFAULT_LATENCY = "https://www.google.com/generate_204"
+HTTP_TARGETS = (
+    ("google", DEFAULT_LATENCY),
+    ("wikipedia", "https://www.wikipedia.org/"),
+    ("youtube", "https://www.youtube.com/"),
+)
 DEFAULT_CAPTIVE = "http://connectivitycheck.gstatic.com/generate_204"
 
 
@@ -242,24 +250,45 @@ def _upload_once(url, size, timeout=40):
     }
 
 
-def latency_ms(url=None, samples=3):
-    """Round-trip time measured on a tiny request, not on a bulk transfer."""
-    url = url or DEFAULT_LATENCY
+def _probe(url, samples, timeout=6):
+    """Timings in ms for one destination; an empty list means it never answered."""
     timings = []
     for _ in range(samples):
         begin = time.time()
         try:
-            with _open(url, timeout=6) as response:
+            with _open(url, timeout=timeout) as response:
                 response.read(64)
             timings.append((time.time() - begin) * 1000)
         except Exception:  # noqa: BLE001
             pass
         time.sleep(0.15)
+    return timings
+
+
+def latency_ms(samples=3):
+    """HTTP round-trip and reachability for three destinations.
+
+    The first is sampled several times for the average and jitter; the other
+    two are tried once, because a blocked site is a fact worth reporting while
+    a slow one is not worth measuring three times.
+    """
+    timings = []
+    targets = []
+    for name, url in HTTP_TARGETS:
+        rounds = samples if name == "google" else 1
+        got = _probe(url, rounds)
+        targets.append({"name": name, "url": url, "ok": bool(got),
+                        "ms": round(sum(got) / len(got), 1) if got else None})
+        timings.extend(got)
 
     if not timings:
-        return None
+        return {"avg": None, "jitter": 0.0, "targets": targets,
+                "reached": 0, "total": len(targets)}
     average = sum(timings) / len(timings)
     jitter = 0.0
     if len(timings) > 1:
         jitter = sum(abs(a - b) for a, b in zip(timings, timings[1:])) / (len(timings) - 1)
-    return {"avg": round(average, 1), "jitter": round(jitter, 1)}
+    return {"avg": round(average, 1), "jitter": round(jitter, 1),
+            "targets": targets,
+            "reached": sum(1 for target in targets if target["ok"]),
+            "total": len(targets)}

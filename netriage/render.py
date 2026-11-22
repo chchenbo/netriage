@@ -222,9 +222,14 @@ def print_network(facts):
         print(_wrap(speed["error"], " " * 20, " " * 20))
 
     latency = facts.get("latency")
-    if latency:
-        print(f"  {'HTTP RTT':<18}{latency['avg']} ms   jitter {latency['jitter']} ms"
-              f"   {DIM}(full request, TLS){RESET}")
+    if latency and latency.get("avg") is not None:
+        reached, total = latency.get("reached"), latency.get("total")
+        if reached is not None and reached < total:
+            # the narrower wording: the long form runs past the rule width
+            note = f"   {DIM}(TLS · {reached}/{total} sites answered){RESET}"
+        else:
+            note = f"   {DIM}(full request, TLS){RESET}"
+        print(f"  {'HTTP RTT':<18}{latency['avg']} ms   jitter {latency['jitter']} ms{note}")
     elif not skipped:
         print(f"  {'HTTP RTT':<18}{DIM}n/a{RESET}")
 

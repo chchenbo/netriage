@@ -87,11 +87,42 @@ def analyze(facts):
     _capacity(found, link, facts)
     _open_network(found, facts)
     _jitter(found, facts)
+    _http_path(found, facts)
 
     return _sorted(found)
 
 
 # ---------------------------------------------------------------- rules
+
+
+def _http_path(found, facts):
+    """Which of the three HTTP destinations answered.
+
+    One destination cannot tell a broken path from a blocked site; three can,
+    and a filtered site is a fact about the network, not a fault, so it is a
+    note rather than a warning.
+    """
+    latency = facts.get("latency") or {}
+    targets = latency.get("targets") or []
+    if not targets:
+        return
+
+    failed = [t["name"] for t in targets if not t.get("ok")]
+    if not failed:
+        return
+
+    if len(failed) == len(targets):
+        found.append(Finding(
+            WARNING, "No HTTP destination answered",
+            "google, wikipedia and youtube all failed: DNS resolves but the "
+            "path to the web does not work."))
+        return
+
+    reached = len(targets) - len(failed)
+    found.append(Finding(
+        INFO, f"Only {reached} of {len(targets)} HTTP destinations answered",
+        f"{', '.join(failed)} did not answer while others did: usually a "
+        f"filter, not a fault."))
 
 
 def _channel_width(found, link):
