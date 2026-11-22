@@ -17,6 +17,7 @@ import getpass
 import json
 import os
 import socket
+import time
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -50,9 +51,20 @@ def collect(iface, medium=None, do_speed=True, do_scan=True, offline=False,
     """Gather everything measurable on one interface, whatever its medium."""
     medium = medium or media.kind_of(iface)
 
+    # How long each phase took, so a slow run can be explained rather than
+    # guessed at. It goes into the debug bundle, never into the report.
+    timings = {}
+    _last = [time.monotonic()]
+
     def phase(name):
+        now = time.monotonic()
+        timings[phase.name] = round(now - _last[0], 1)
+        _last[0] = now
+        phase.name = name
         if on_phase:
             on_phase(name)
+
+    phase.name = "start"
 
     facts = {
         "iface": iface,
@@ -119,6 +131,8 @@ def collect(iface, medium=None, do_speed=True, do_scan=True, offline=False,
             facts["why_not_measured"] = "no DHCP lease"
         else:
             facts["why_not_measured"] = "no address"
+        facts["timings"] = {name: value for name, value in timings.items()
+                            if name != "start"}
         facts["findings"] = [f.__dict__ for f in diagnose.analyze(facts)]
         return facts
 
@@ -176,6 +190,8 @@ def collect(iface, medium=None, do_speed=True, do_scan=True, offline=False,
         facts["upload"] = {"skipped": True}
         facts["latency"] = None
 
+    timings[phase.name] = round(time.monotonic() - _last[0], 1)
+    facts["timings"] = {name: value for name, value in timings.items() if name != "start"}
     facts["findings"] = [f.__dict__ for f in diagnose.analyze(facts)]
     return facts
 

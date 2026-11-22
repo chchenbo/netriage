@@ -136,3 +136,24 @@ def test_a_healthy_first_destination_is_measured_alone(monkeypatch):
 def test_nothing_answering_gives_no_value(monkeypatch):
     monkeypatch.setattr(network, "_probe", lambda url, samples, timeout=6: [])
     assert network.latency_ms() is None
+
+
+def test_a_failed_bigger_upload_keeps_the_measurement_in_hand(monkeypatch):
+    """Cloudflare answers 502 on the 12 MB retry; the 4 MB result is still good."""
+    def fake(url, size, timeout=40):
+        if size > 4_000_000:
+            raise OSError("HTTP Error 502: Bad Gateway")
+        return {"mbps": 84.2, "seconds": 0.38, "bytes": size}
+
+    monkeypatch.setattr(network, "_upload_once", fake)
+    result = network.upload()
+    assert result["mbps"] == 84.2
+    assert result["bytes"] == 4_000_000
+
+
+def test_an_upload_that_never_works_raises(monkeypatch):
+    monkeypatch.setattr(network, "_upload_once",
+                        lambda url, size, timeout=40: (_ for _ in ()).throw(OSError("502")))
+    import pytest
+    with pytest.raises(RuntimeError):
+        network.upload()

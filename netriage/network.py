@@ -210,17 +210,26 @@ def _download_once(url, seconds, chunk, on_sample):
     }
 
 
-def upload(url=DEFAULT_UPLOAD, seconds=8.0):
-    """Time an upload of a fixed payload, growing it once if the link is fast."""
-    # Two attempts at most, and the second only on a link fast enough that the
-    # first finished before it could be timed.
+def upload(url=DEFAULT_UPLOAD):
+    """Time an upload of a fixed payload, growing it once if the link is fast.
+
+    The bigger payload is only for accuracy on a fast link. When it fails the
+    measurement already in hand is kept: a 502 from the endpoint says nothing
+    about the upload speed that was just measured.
+    """
     sizes = (4_000_000, 12_000_000)
     best = None
     for size in sizes:
-        result = _upload_once(url, size)
+        try:
+            result = _upload_once(url, size)
+        except Exception:  # noqa: BLE001
+            break
         best = result
         if result["seconds"] >= 0.8:
             break
+
+    if best is None:
+        raise RuntimeError("upload endpoint did not accept the payload")
     return best
 
 

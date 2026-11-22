@@ -1479,3 +1479,26 @@ def test_a_report_never_names_a_command_that_does_not_exist():
 
     facts = {"command": "quick", "medium": "wired", "timestamp": "x", "findings": []}
     assert "- Command: netriage" in report.markdown(facts, "/tmp/x.json")
+
+
+def test_each_phase_is_timed(monkeypatch):
+    """A slow run has to be explainable, not guessed at."""
+    monkeypatch.setattr(cli.media, "kind_of", lambda iface: "wired")
+    monkeypatch.setattr(cli.wired, "link", lambda iface: {"connected": True,
+                                                          "speed_mbps": 1000,
+                                                          "duplex": "full"})
+    monkeypatch.setattr(cli.wired, "lldp", lambda iface: {})
+    monkeypatch.setattr(cli.wired, "counters", lambda iface: {})
+    monkeypatch.setattr(cli.wired, "packets", lambda iface: None)
+    monkeypatch.setattr(cli.network, "ping", lambda iface, target, count=4: {
+        "avg": 0.2, "loss": 0, "jitter": 0.0, "min": 0.1, "max": 0.3})
+    monkeypatch.setattr(cli.network, "resolve", lambda server, name, timeout=4: {
+        "ok": True, "ms": 3, "server": server, "status": "ok"})
+    monkeypatch.setattr(cli.network, "address", lambda iface: {
+        "ip": "10.0.0.2/24", "gateway": "10.0.0.1"})
+
+    facts = cli.collect("eth0", do_speed=False, do_scan=False, offline=True)
+    timings = facts.get("timings")
+    assert isinstance(timings, dict)
+    assert timings, "at least the probing phase must be timed"
+    assert all(isinstance(v, float) for v in timings.values())
