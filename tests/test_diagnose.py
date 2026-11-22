@@ -515,3 +515,20 @@ def test_a_normal_gateway_figure_is_not_explained_away():
     )
     assert not any("slower than the internet" in f.title
                    for f in diagnose.analyze(facts))
+
+
+def _http_facts(reached):
+    names = ("google", "wikipedia", "youtube")
+    return {
+        "medium": "wifi",
+        "link": {"connected": True, "signal": -55, "ssid": "x"},
+        "address": {"ip": "10.0.0.2/24", "gateway": "10.0.0.1"},
+        "latency": {
+            "avg": 8.0 if reached else None, "jitter": 1.0,
+            "reached": reached, "total": 3,
+            "targets": [{"name": n, "ok": i < reached}
+                        for i, n in enumerate(names)],
+        },
+    }
+
+

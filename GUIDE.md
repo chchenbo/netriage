@@ -163,18 +163,17 @@ distance, not interference.
 | Jitter | < 5 ms | ≥ 20 ms and ≥ 50% of the mean | — |
 | DNS (local) | ok, < 50 ms | > 200 ms → WARNING | no reply → CRITICAL |
 | HTTP RTT | < 100 ms | — | — |
-| Sites answered | 3 of 3 | 2 of 3 → note | 0 of 3 → WARNING |
 | Subnet | /24 | ≤ /16 → WARNING | — |
 
 `DNS local` is the resolver DHCP handed out; `DNS public` is 1.1.1.1, there for
 comparison. REFUSED, SERVFAIL and NXDOMAIN are reported as themselves, not as
 "the server is down".
 
-`HTTP RTT` is a full request over TLS, to three destinations: google,
-wikipedia and youtube. One is not enough — a single site that does not answer
-could be blocked rather than unreachable, and telling those apart is the
-point. When only some answer, the line says `2/3 sites answered` and the
-verdict calls it a note, because a filter is policy, not a fault.
+`HTTP RTT` is a full request over TLS: DNS, TCP, the handshake and a few
+bytes back. Three destinations are configured and the first that answers is
+used, so a site that is blocked on this network costs one attempt instead of
+turning into a false fault. Which one was used is not reported, because the
+number describes this network, not that server.
 
 ### Wired link
 

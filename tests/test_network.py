@@ -98,3 +98,41 @@ def test_resolve_reports_success(monkeypatch):
            ";; ANSWER: 1\n;; Query time: 4 msec\nANSWER: 1\n", ""))
     result = network.resolve("10.0.0.1", "example.com")
     assert result["ok"] is True and result["status"] == "ok"
+
+
+
+
+def test_the_first_destination_that_answers_is_used(monkeypatch):
+    """A blocked site costs one attempt and changes nothing else."""
+    calls = []
+
+    def fake(url, samples, timeout=6):
+        calls.append((url, samples))
+        return [40.0] * samples if "wikipedia" in url else []
+
+    monkeypatch.setattr(network, "_probe", fake)
+    result = network.latency_ms()
+
+    assert result["avg"] == 40.0
+    assert "wikipedia" in calls[-1][0]
+    assert sum(1 for url, _ in calls if "wikipedia" in url) == 2
+
+
+def test_a_healthy_first_destination_is_measured_alone(monkeypatch):
+    calls = []
+
+    def fake(url, samples, timeout=6):
+        calls.append((url, samples))
+        return [30.0] * samples
+
+    monkeypatch.setattr(network, "_probe", fake)
+    result = network.latency_ms()
+
+    assert result["avg"] == 30.0
+    assert len({url for url, _ in calls}) == 1, "only one destination is touched"
+    assert sum(samples for _, samples in calls) == 3, "three samples in total"
+
+
+def test_nothing_answering_gives_no_value(monkeypatch):
+    monkeypatch.setattr(network, "_probe", lambda url, samples, timeout=6: [])
+    assert network.latency_ms() is None

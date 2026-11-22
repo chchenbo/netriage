@@ -96,17 +96,9 @@ def measurement_rows(facts):
         ("Download peak", skipped_or(speed.get("peak"), speed, " Mb/s")),
         ("Upload", skipped_or(upload.get("mbps"), upload, " Mb/s")),
         ("HTTP RTT", value(latency.get("avg"), " ms")),
-        ("Sites answered", value(_sites(latency), " of 3")),
         ("Access points seen", value(len(facts.get("aps") or []))),
     ]
     return rows
-
-
-def _sites(latency):
-    """How many of the three HTTP destinations answered, or None when untested."""
-    if not latency or latency.get("reached") is None:
-        return None
-    return latency["reached"]
 
 
 def _command(facts):

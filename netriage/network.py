@@ -17,14 +17,13 @@ DEFAULT_DOWNLOADS = (
     "https://speed.cloudflare.com/__down?bytes=10000000",
 )
 DEFAULT_UPLOAD = "https://speed.cloudflare.com/__up"
-# Three destinations, all https: one fast endpoint that answers 0.2 kB, and
-# two real pages. One is not enough to tell "the path is broken" from "this
-# site is blocked", and that difference is the whole point of the check.
-DEFAULT_LATENCY = "https://www.google.com/generate_204"
+# What the HTTP time is measured against. The first one that answers is used
+# and the rest are never touched, so a blocked or retired site costs one
+# attempt and does not turn into a false fault.
 HTTP_TARGETS = (
-    ("google", DEFAULT_LATENCY),
-    ("wikipedia", "https://www.wikipedia.org/"),
-    ("youtube", "https://www.youtube.com/"),
+    "https://www.google.com/generate_204",
+    "https://www.wikipedia.org/",
+    "https://www.youtube.com/",
 )
 DEFAULT_CAPTIVE = "http://connectivitycheck.gstatic.com/generate_204"
 
@@ -251,7 +250,7 @@ def _upload_once(url, size, timeout=40):
 
 
 def _probe(url, samples, timeout=6):
-    """Timings in ms for one destination; an empty list means it never answered."""
+    """Timings in ms for one destination; empty means it never answered."""
     timings = []
     for _ in range(samples):
         begin = time.time()
@@ -266,29 +265,24 @@ def _probe(url, samples, timeout=6):
 
 
 def latency_ms(samples=3):
-    """HTTP round-trip and reachability for three destinations.
+    """HTTP round-trip time, using the first destination that answers.
 
-    The first is sampled several times for the average and jitter; the other
-    two are tried once, because a blocked site is a fact worth reporting while
-    a slow one is not worth measuring three times.
+    The first attempt is short-tempered: a site that does not answer within a
+    few seconds is not the one to measure, so the next is tried. Only the
+    destination that worked gets the remaining samples.
     """
-    timings = []
-    targets = []
-    for name, url in HTTP_TARGETS:
-        rounds = samples if name == "google" else 1
-        got = _probe(url, rounds)
-        targets.append({"name": name, "url": url, "ok": bool(got),
-                        "ms": round(sum(got) / len(got), 1) if got else None})
-        timings.extend(got)
+    for url in HTTP_TARGETS:
+        timings = _probe(url, 1, timeout=4)
+        if timings:
+            break
+    else:
+        return None
 
-    if not timings:
-        return {"avg": None, "jitter": 0.0, "targets": targets,
-                "reached": 0, "total": len(targets)}
+    if samples > 1:
+        timings += _probe(url, samples - 1)
+
     average = sum(timings) / len(timings)
     jitter = 0.0
     if len(timings) > 1:
         jitter = sum(abs(a - b) for a, b in zip(timings, timings[1:])) / (len(timings) - 1)
-    return {"avg": round(average, 1), "jitter": round(jitter, 1),
-            "targets": targets,
-            "reached": sum(1 for target in targets if target["ok"]),
-            "total": len(targets)}
+    return {"avg": round(average, 1), "jitter": round(jitter, 1)}
