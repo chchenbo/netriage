@@ -72,6 +72,18 @@ def collect(iface, medium=None, do_speed=True, do_scan=True, offline=False,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
     }
 
+    if medium == "virtual":
+        # Traffic over a tunnel is carried by some other interface; measuring
+        # here would measure that one and report it as this one's.
+        facts["link"] = {"iface": iface, "connected": False, "virtual": True}
+        facts["aps"] = []
+        facts["speed"] = {"skipped": True}
+        facts["upload"] = {"skipped": True}
+        facts["latency"] = None
+        facts["why_not_measured"] = "virtual interface"
+        facts["findings"] = [f.__dict__ for f in diagnose.analyze(facts)]
+        return facts
+
     if medium == "wired":
         facts["link"] = wired.link(iface)
         facts["lldp"] = wired.lldp(iface) if facts["link"].get("connected") else {}
@@ -232,7 +244,16 @@ def cmd_quick(args):
     _apply_defaults(args)
     iface, medium = resolve_interface(args)
     if not iface:
-        print("No usable network interface found. Try: ip -br link", file=sys.stderr)
+        tunnels = [name for name in media.all_interfaces()
+                   if media.kind_of(name) == "virtual"]
+        if tunnels:
+            # The usual reason a host has no candidate: everything it reaches
+            # goes through a tunnel, and a tunnel is not an adapter.
+            print(f"Only tunnels here ({', '.join(tunnels)}); netriage measures "
+                  f"physical links. Try: ip -br link", file=sys.stderr)
+        else:
+            print("No usable network interface found. Try: ip -br link",
+                  file=sys.stderr)
         return 2
 
     if not _exists(iface):

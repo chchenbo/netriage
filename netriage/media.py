@@ -44,6 +44,25 @@ def is_wireless(iface):
     return bool(glob.glob(f"/sys/class/net/{iface}/wireless"))
 
 
+# A physical adapter has a device behind it in sysfs. Tunnels, bridges, bonds
+# and container links do not: traffic over them is carried by some other
+# interface, and measuring "their" speed measures that other one.
+_VIRTUAL_NAMES = ("lo", "tun", "tap", "wg", "tailscale", "zt", "ppp", "sit",
+                  "ip6tnl", "docker", "veth", "br-", "virbr", "lxc", "dummy")
+
+
+def is_physical(iface):
+    if os.path.exists(f"/sys/class/net/{iface}/device"):
+        return True
+    if iface.startswith(_VIRTUAL_NAMES):
+        return False
+    return not os.path.isdir("/sys/class/net")        # not Linux: assume physical
+
+
+def is_virtual(iface):
+    return not is_wireless(iface) and not is_physical(iface)
+
+
 def _by_type(kind):
     found = []
     code, out, _ = run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device", "status"])
@@ -75,11 +94,13 @@ def wireless_interfaces():
 
 def wired_interfaces():
     return [iface for iface in _by_type("ethernet")
-            if not iface.startswith(("docker", "veth", "br-", "virbr", "tun", "tap"))]
+            if not iface.startswith(_VIRTUAL_NAMES) and is_physical(iface)]
 
 
 def kind_of(iface):
-    return "wifi" if is_wireless(iface) else "wired"
+    if is_wireless(iface):
+        return "wifi"
+    return "virtual" if is_virtual(iface) else "wired"
 
 
 def pick(kind=None, explicit=None):

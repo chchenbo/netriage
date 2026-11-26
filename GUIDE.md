@@ -72,6 +72,20 @@ netriage compare 1 2 3 4            # trend table
 
 Two runs from different media are refused: they share no measurement.
 
+### Which interface it picks
+
+The one carrying traffic, if there is one: a physical adapter with a carrier.
+Tunnels and bridges (`tailscale0`, `wg0`, `tun0`, `docker0`, `br-*`) are never
+picked, because traffic over them leaves by some other interface and a
+measurement there would describe that one instead. Ask for one explicitly and
+netriage says so rather than measuring the wrong path:
+
+```bash
+netriage --iface tailscale0
+#   Kind   tunnel or loopback, not a network adapter
+#   [WARNING] tailscale0 is a tunnel, not an adapter
+```
+
 ## Flags
 
 Options work before or after the command.

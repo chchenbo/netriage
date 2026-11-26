@@ -137,6 +137,21 @@ cd ~/netriage-src && sudo bash uninstall.sh                      # install.sh
 
 ---
 
+## `netriage` reports `tailscale0` as a cable
+
+Fixed in 0.55.0. On a host whose only interface is a VPN tunnel, the tunnel was
+chosen as "the wired one", and the run reported `Speed unknown`, no default
+route, and 100% packet loss — all true of the tunnel and all irrelevant.
+
+A tunnel is not an adapter: traffic over it leaves by another interface, so
+netriage now skips it and names it:
+
+```
+Only tunnels here (tailscale0); netriage measures physical links.
+```
+
+If the host genuinely has no physical link left, that is the honest answer.
+
 ## `scan` shows only one access point
 
 Many drivers answer `iw dev wlan0 scan` with just the BSS you are associated

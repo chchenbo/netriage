@@ -42,6 +42,14 @@ def utilization(facts):
 
 def analyze(facts):
     """Return findings, most serious first."""
+    if facts.get("why_not_measured") == "virtual interface":
+        name = facts.get("iface") or "this interface"
+        return [Finding(
+            WARNING, f"{name} is a tunnel, not an adapter",
+            "Traffic on it is carried by another interface, so a measurement "
+            "here would describe that one instead. Run netriage --iface <name> "
+            "with the interface the traffic leaves by.")]
+
     found = []
     facts["busy_pct"], facts["busy_source"] = utilization(facts)
     link = facts.get("link") or {}

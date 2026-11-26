@@ -22,6 +22,11 @@ from .util import (BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW, bar, fmt_pct,
 def print_facts(facts):
     if facts.get("medium") == "wired":
         _print_wired_link(facts)
+    elif facts.get("medium") == "virtual":
+        link = facts.get("link") or {}
+        print(f"  {'Kind':<18}tunnel or loopback, not a network adapter")
+        if link.get("virtual"):
+            print(f"  {'Carried by':<18}{DIM}another interface{RESET}")
     else:
         _print_wireless_link(facts)
 
@@ -271,7 +276,9 @@ def print_summary(facts):
         colour = GREEN
     head = ", ".join(parts) if parts else "all clear"
 
-    if facts.get("medium") == "wired":
+    if facts.get("medium") == "virtual":
+        extra = ["tunnel"]
+    elif facts.get("medium") == "wired":
         speed = (facts.get("link") or {}).get("speed")
         extra = [f"{speed} Mb/s" if speed else "cable"]
     else:

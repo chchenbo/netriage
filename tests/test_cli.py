@@ -1502,3 +1502,39 @@ def test_each_phase_is_timed(monkeypatch):
     assert isinstance(timings, dict)
     assert timings, "at least the probing phase must be timed"
     assert all(isinstance(v, float) for v in timings.values())
+
+
+def test_a_tunnel_is_never_picked_automatically(monkeypatch):
+    """Traffic over tailscale0 leaves by another interface; measuring it lies."""
+    from netriage import media
+
+    monkeypatch.setattr(media, "_by_type",
+                        lambda kind: ["tailscale0", "enp4s0"] if kind == "ethernet" else [])
+    monkeypatch.setattr(media, "is_physical", lambda name: name == "enp4s0")
+    monkeypatch.setattr(media, "is_wireless", lambda name: False)
+    monkeypatch.setattr(media, "carrier", lambda name: True)
+
+    iface, medium = media.pick()
+    assert iface == "enp4s0"
+    assert medium == "wired"
+    assert media.kind_of("tailscale0") == "virtual"
+
+
+def test_a_tunnel_is_reported_not_measured():
+    facts = cli.collect("tailscale0", medium="virtual", do_speed=False,
+                        do_scan=False, offline=True)
+    assert facts["why_not_measured"] == "virtual interface"
+    assert facts["speed"] == {"skipped": True}
+    assert facts["latency"] is None
+    titles = [f["title"] for f in facts["findings"]]
+    assert any("tunnel" in title for title in titles), titles
+
+
+def test_a_tunnel_run_says_so_and_does_not_claim_cable(monkeypatch):
+    from netriage import render
+
+    facts = cli.collect("tailscale0", medium="virtual", do_speed=False,
+                        do_scan=False, offline=True)
+    out = capture(render.print_facts, facts) + capture(render.print_summary, facts)
+    assert "tunnel" in out
+    assert "cable" not in out
